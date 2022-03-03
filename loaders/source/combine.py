@@ -19,6 +19,13 @@ class OSMN40_train(Dataset):
     def __getitem__(self, index):
         p = Path(self.object_list[index]['path'])
         lbl = self.object_list[index]['label']
+
+        if (self.typedata != "full"):
+            p2 = str(p).replace("Miss1", "Miss")
+            num_obj = np.loadtxt(Path(p2)/'mask.txt')
+        else:
+            num_obj = 1
+        # print(index, num_obj)
         # # image
         img = load_img(p/'image', self.phase in ['train', 'target'], n_view=24)
         # # mesh
@@ -28,11 +35,10 @@ class OSMN40_train(Dataset):
         # voxel
         vox = load_vox(p/'voxel', self.phase in ['train', 'target'], resolution=64)
 
-        if (self.typedata != "full"):
-            num_obj = np.loadtxt(p/'mask.txt')
-        else:
-            num_obj = 1
-
+        # print(img.shape)
+        # print(mesh[0].shape, mesh[1].shape)
+        # print(pt.shape)
+        # print(vox.shape)
         return img, mesh, pt, vox, num_obj, lbl
 
     def __len__(self):
