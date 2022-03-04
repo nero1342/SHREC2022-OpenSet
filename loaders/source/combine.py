@@ -19,26 +19,33 @@ class OSMN40_train(Dataset):
     def __getitem__(self, index):
         p = Path(self.object_list[index]['path'])
         lbl = self.object_list[index]['label']
-
-        if (self.typedata != "full"):
-            p2 = str(p).replace("Miss1", "Miss")
-            num_obj = np.loadtxt(Path(p2)/'mask.txt')
-        else:
-            num_obj = 1
-        # print(index, num_obj)
+        num_obj = torch.tensor([1, 1, 1, 1])
         # # image
-        img = load_img(p/'image', self.phase in ['train', 'target'], n_view=24)
+        try:
+          img = load_img(p/'image', self.phase in ['train', 'target'], n_view=24)
+        except:
+          num_obj[0] = 0
+          img = torch.zeros((24, 3, 224, 224))
         # # mesh
-        mesh = load_mesh(p/'mesh', self.phase in ['train', 'target'], typedata=self.typedata)
+        try:
+          mesh = load_mesh(p/'mesh', self.phase in ['train', 'target'], typedata=self.typedata)
+        except:
+          mesh = (torch.zeros((15, 500)), torch.zeros((500, 3)))
+          num_obj[1] = 0
         # point cloud
-        pt = load_pt(p/'pointcloud',self.phase in ['train', 'target'], resolution=2048)
+        try:
+          pt = load_pt(p/'pointcloud',self.phase in ['train', 'target'], resolution=2048)
+        except:
+          num_obj[2] = 0
+          pt = torch.zeros((2048, 3))
         # voxel
-        vox = load_vox(p/'voxel', self.phase in ['train', 'target'], resolution=64)
-
-        # print(img.shape)
-        # print(mesh[0].shape, mesh[1].shape)
-        # print(pt.shape)
-        # print(vox.shape)
+        try:
+          vox = load_vox(p/'voxel', self.phase in ['train', 'target'], resolution=64)
+        except:
+          num_obj[3] = 0
+          vox = torch.zeros((1, 64, 64, 64))
+        print(index, self.object_list[index]['path'], num_obj)
+        
         return img, mesh, pt, vox, num_obj, lbl
 
     def __len__(self):

@@ -19,29 +19,32 @@ class OSMN40_train(Dataset):
     def __getitem__(self, index):
         p = Path(self.object_list[index]['path'])
         lbl = self.object_list[index]['label']
-        num_obj = torch.tensor([1, 1, 1, 1]).view(1, 4)
+        num_obj = np.array([1, 1, 1, 1])
         print(index, num_obj)
         # # image
         try:
           img = load_img(p/'image', self.phase in ['train', 'target'], n_view=24)
         except:
           num_obj[0] = 0
+          img = torch.zeros((24, 3, 224, 224))
         # # mesh
         try:
           mesh = load_mesh(p/'mesh', self.phase in ['train', 'target'], typedata=self.typedata)
         except:
-          mesh = 
+          mesh = (torch.zeros((15, 500)), torch.zeros((500, 3)))
           num_obj[1] = 0
         # point cloud
         try:
           pt = load_pt(p/'pointcloud',self.phase in ['train', 'target'], resolution=2048)
         except:
           num_obj[2] = 0
+          pt = torch.zeros((2048, 3))
         # voxel
         try:
           vox = load_vox(p/'voxel', self.phase in ['train', 'target'], resolution=64)
         except:
           num_obj[3] = 0
+          vox = torch.zeros((64, 64, 64))
         # print(img.shape)
         # print(mesh[0].shape, mesh[1].shape)
         # print(pt.shape)
