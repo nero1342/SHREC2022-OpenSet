@@ -72,6 +72,7 @@ def train(data_loader, netC, netF, criterion, optimizer, epoch, iter_num ,max_it
     st = time.time()
     progressbar = tqdm(enumerate(data_loader))
     for i, (img, mesh, pt, vox, selection, lbl) in progressbar:
+        # print(selection, selection.shape)
         iter_num += 1
         img = img.cuda()
         mesh = [d.cuda() for d in mesh]
@@ -136,16 +137,16 @@ def validation(data_loader, netC, netF, epoch):
     fts = []
 
     st = time.time()
-    for img, mesh, pt, vox, _, lbl in tqdm(data_loader):
+    for img, mesh, pt, vox, selection, lbl in tqdm(data_loader):
         img = img.cuda()
         mesh = [d.cuda() for d in mesh]
         pt = pt.cuda()
         vox = vox.cuda()
         lbl = lbl.cuda()
         data = (img, mesh, pt, vox)
+        selection = selection.cuda()
 
-
-        glo_ft, features = netF(data)
+        glo_ft, features = netF(data, selection)
         out_obj = netC(glo_ft)
     
         _, preds = torch.max(out_obj, 1)
@@ -153,7 +154,7 @@ def validation(data_loader, netC, netF, epoch):
         all_lbls.extend(lbl.squeeze().detach().cpu().numpy().tolist())
         fts.append(glo_ft.detach().cpu().numpy())
 
-    fts_uni = np.concatenate((fts), axis=1)
+    fts_uni = np.concatenate((fts), axis=0)
     dist_mat = scipy.spatial.distance.cdist(fts_uni, fts_uni, "cosine")
     map_s = map_score(dist_mat, all_lbls, all_lbls)
     acc_mi = acc_score(all_lbls, all_preds, average="micro")
@@ -165,7 +166,7 @@ def validation(data_loader, netC, netF, epoch):
         "meanclass acc": acc_ma,
         "map": map_s,
         "epoch": epoch,
-        "name": "model: EfficientNetB2"
+        "name": "model: EfficientNetB0"
     }
     tab_head, tab_data = res2tab(res)
     print(tab_head)
@@ -256,6 +257,9 @@ def main():
                 best_res, best_state = res, val_state
                 save_checkpoint(val_state, res, 'F', netF.module)
                 save_checkpoint(val_state, res, 'C', netC.module)
+
+            save_checkpoint(val_state, res, 'lastF', netF.module)
+            save_checkpoint(val_state, res, 'lastC', netC.module)
 
     print("\nTrain Finished!")
     tab_head, tab_data = res2tab(best_res)

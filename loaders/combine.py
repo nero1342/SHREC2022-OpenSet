@@ -4,51 +4,79 @@ from torch.utils.data import Dataset
 from .image import load_img
 from .voxel import load_vox
 from .mesh import load_mesh
-from loaders import load_pt
+from loaders.source import load_pt
+import numpy as np
 
 
 class OSMN40_train(Dataset):
-    def __init__(self, phase, object_list):
+    def __init__(self, phase, object_list, typedata="full"):
         super().__init__()
-        assert phase in ('train', 'val')
+        assert phase in ('train', 'val', 'target', 'test')
         self.phase = phase
         self.object_list = object_list
+        self.typedata = typedata
 
     def __getitem__(self, index):
         p = Path(self.object_list[index]['path'])
         lbl = self.object_list[index]['label']
+        num_obj = torch.tensor([1, 1, 1, 1]).view(1, 4)
+        print(index, num_obj)
         # # image
-        img = load_img(p/'image', self.phase=='train')
+        try:
+          img = load_img(p/'image', self.phase in ['train', 'target'], n_view=24)
+        except:
+          num_obj[0] = 0
         # # mesh
-        mesh = load_mesh(p/'mesh', self.phase=='train')
+        try:
+          mesh = load_mesh(p/'mesh', self.phase in ['train', 'target'], typedata=self.typedata)
+        except:
+          mesh = 
+          num_obj[1] = 0
         # point cloud
-        pt = load_pt(p/'pointcloud', self.phase=='train')
+        try:
+          pt = load_pt(p/'pointcloud',self.phase in ['train', 'target'], resolution=2048)
+        except:
+          num_obj[2] = 0
         # voxel
-        vox = load_vox(p/'voxel', self.phase=='train')
-
-        return img, mesh, pt, vox, lbl
+        try:
+          vox = load_vox(p/'voxel', self.phase in ['train', 'target'], resolution=64)
+        except:
+          num_obj[3] = 0
+        # print(img.shape)
+        # print(mesh[0].shape, mesh[1].shape)
+        # print(pt.shape)
+        # print(vox.shape)
+        return img, mesh, pt, vox, num_obj, lbl
 
     def __len__(self):
         return len(self.object_list)
 
 
 class OSMN40_retrive(Dataset):
-    def __init__(self, object_list):
+    def __init__(self, object_list, typedata="full"):
         super().__init__()
         self.object_list = object_list
+        self.typedata = typedata
 
     def __getitem__(self, index):
+        # import pdb; pdb.set_trace()
+        
         p = Path(self.object_list[index])
         # # image
-        img = load_img(p/'image')
+        img = load_img(p/'image', n_view=24)
         # # mesh
-        mesh = load_mesh(p/'mesh')
+        mesh = load_mesh(p/'mesh', typedata = self.typedata)
         # point cloud
-        pt = load_pt(p/'pointcloud')
+        pt = load_pt(p/'pointcloud' , resolution=2048)
         # voxel
-        vox = load_vox(p/'voxel')
+        vox = load_vox(p/'voxel', resolution=64)
 
-        return img, mesh, pt, vox
+        if (self.typedata != "full"):
+            num_obj = np.loadtxt(p/'mask.txt')
+        else:
+            num_obj = 1
+
+        return img, mesh, pt, vox, num_obj
 
     def __len__(self):
         return len(self.object_list)
@@ -56,3 +84,4 @@ class OSMN40_retrive(Dataset):
 
 if __name__ == '__main__':
     pass
+

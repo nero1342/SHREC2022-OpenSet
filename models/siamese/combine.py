@@ -32,13 +32,14 @@ class ClassifierModel(nn.Module):
         super().__init__() 
         dropout = 0.1
         self.classifier = nn.Sequential(
-            nn.Linear(feature_dim, feature_dim // 2),
-            nn.ReLU(),
-            nn.Dropout(p=dropout),
-            nn.Linear(feature_dim // 2, feature_dim // 4),
-            nn.ReLU(),
-            nn.Dropout(p=dropout),
-            nn.Linear(feature_dim // 4, n_classes)
+            nn.Linear(feature_dim, n_classes)
+            # nn.Linear(feature_dim, feature_dim // 2),
+            # nn.ReLU(),
+            # nn.Dropout(p=dropout),
+            # nn.Linear(feature_dim // 2, feature_dim // 4),
+            # nn.ReLU(),
+            # nn.Dropout(p=dropout),
+            # nn.Linear(feature_dim // 4, n_classes)
         )
 
     def forward(self, features):
